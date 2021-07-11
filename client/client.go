@@ -10,9 +10,8 @@ import (
 type Client struct{}
 
 func (c *Client) Connect() *websocket.Conn {
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/echo"}
+	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/connection"}
 	log.Printf("connecting to %s", u.String())
-
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)

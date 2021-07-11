@@ -46,6 +46,20 @@ func newGame(cfg *config.Config, client *client.Client) *Game {
 }
 
 func (g *Game) Update() error {
+	// FIXME: Reading messages crashes the program
+	_, message, err := g.conn.ReadMessage()
+	if err != nil {
+		fmt.Println("read:", err)
+	}
+
+	if message != nil {
+		msgString := string(message[:])
+		g.history = append(g.history, Message{
+			address: g.conn.LocalAddr().String(),
+			text:    msgString,
+		})
+	}
+
 	// if backspace was pressed
 	//   delete one char from g.text
 
@@ -56,14 +70,8 @@ func (g *Game) Update() error {
 			log.Println("write error:", err)
 			return err
 		}
-
-		g.history = append(g.history, Message{
-			address: g.conn.LocalAddr().String(),
-			text:    g.text,
-		})
 		g.text = ""
 	}
-
 	return nil
 }
 

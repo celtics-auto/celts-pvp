@@ -107,17 +107,4 @@ func main() {
 	if err := ebiten.RunGame(myGame); err != nil {
 		log.Fatal(err)
 	}
-
-	/*
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-		go func() {
-			sig := <-sigChan
-			fmt.Println(sig, "EXITING")
-
-			data := websocket.FormatCloseMessage(websocket.CloseNormalClosure, fmt.Sprintf("Client %s exiting.", myGame.conn.LocalAddr()))
-			myGame.conn.WriteMessage(websocket.CloseMessage, data)
-		}()
-	*/
 }

@@ -29,35 +29,35 @@ func (m *Message) String() string {
 }
 
 type Game struct {
-	text    string
-	history []Message
-	config  *config.Config
-	conn    *websocket.Conn
+	text        string
+	history     []Message
+	config      *config.Config
+	client      *client.Client
+	messageChan chan *client.MessageJson
 }
 
-func newGame(cfg *config.Config, client *client.Client) *Game {
-	conn := client.Connect()
+func newGame(cfg *config.Config, c *client.Client) *Game {
+	msgChan := make(chan *client.MessageJson)
 
 	return &Game{
-		config:  cfg,
-		history: []Message{},
-		conn:    conn,
+		config:      cfg,
+		history:     []Message{},
+		client:      c,
+		messageChan: msgChan,
 	}
 }
 
 func (g *Game) Update() error {
 	// FIXME: Reading messages crashes the program
-	_, message, err := g.conn.ReadMessage()
-	if err != nil {
-		fmt.Println("read:", err)
-	}
 
-	if message != nil {
-		msgString := string(message[:])
+	select {
+	case mJson := <-g.messageChan:
+		msgString := string(mJson.Message[:])
 		g.history = append(g.history, Message{
-			address: g.conn.LocalAddr().String(),
+			address: mJson.Address,
 			text:    msgString,
 		})
+	default:
 	}
 
 	// if backspace was pressed
@@ -66,7 +66,7 @@ func (g *Game) Update() error {
 	g.text += string(ebiten.InputChars())
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		if err := g.conn.WriteMessage(websocket.TextMessage, []byte(g.text)); err != nil {
+		if err := g.client.Conn.WriteMessage(websocket.TextMessage, []byte(g.text)); err != nil {
 			log.Println("write error:", err)
 			return err
 		}
@@ -100,8 +100,10 @@ func main() {
 	}
 
 	c := client.New()
-
 	myGame := newGame(cfg, c)
+
+	go c.ReceiveMessage(myGame.messageChan)
+
 	if err := ebiten.RunGame(myGame); err != nil {
 		log.Fatal(err)
 	}

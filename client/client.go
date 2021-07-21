@@ -5,8 +5,20 @@ import (
 	"log"
 	"net/url"
 
+	"github.com/celtics-auto/ebiten-chat/objects"
 	"github.com/gorilla/websocket"
 )
+
+type vector struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type player struct {
+	Position vector `json:"position"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+}
 
 type MessageJson struct {
 	Address string `json:"address"`
@@ -38,6 +50,17 @@ func (c *Client) ReceiveMessage(msgChan chan *MessageJson) {
 		}
 		msgChan <- c.Message
 	}
+}
+
+func (c *Client) SendMessage(p *objects.Player) error {
+	playerJson := player{
+		Position: vector(*p.Position),
+		Width:    p.Width,
+		Height:   p.Height,
+	}
+	err := c.Conn.WriteJSON(playerJson)
+
+	return err
 }
 
 func New() *Client {

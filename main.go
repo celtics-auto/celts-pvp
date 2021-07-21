@@ -3,10 +3,14 @@ package main
 import (
 	"fmt"
 	"image/color"
+
 	"log"
 
+	"github.com/celtics-auto/ebiten-chat/chat"
 	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/config"
+	"github.com/celtics-auto/ebiten-chat/objects"
+	"github.com/celtics-auto/ebiten-chat/utils"
 
 	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,8 +19,8 @@ import (
 )
 
 const (
-	SCREEN_WIDTH  = 640
-	SCREEN_HEIGHT = 480
+	SCREEN_WIDTH  = 1366
+	SCREEN_HEIGHT = 768
 )
 
 type Message struct {
@@ -34,6 +38,8 @@ type Game struct {
 	config      *config.Config
 	client      *client.Client
 	messageChan chan *client.MessageJson
+	player      *objects.Player
+	chat        *chat.Chat
 }
 
 func newGame(cfg *config.Config, c *client.Client) *Game {
@@ -48,8 +54,6 @@ func newGame(cfg *config.Config, c *client.Client) *Game {
 }
 
 func (g *Game) Update() error {
-	// FIXME: Reading messages crashes the program
-
 	select {
 	case mJson := <-g.messageChan:
 		msgString := string(mJson.Message[:])
@@ -72,6 +76,11 @@ func (g *Game) Update() error {
 		}
 		g.text = ""
 	}
+
+	updatedPlayer := g.player.Update()
+	if updatedPlayer != nil {
+		g.client.SendMessage(updatedPlayer)
+	}
 	return nil
 }
 
@@ -84,6 +93,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 	text.Draw(screen, g.text, g.config.Fonts.MplusNormal, 10, SCREEN_HEIGHT-20, color.White)
+	g.player.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -101,6 +111,10 @@ func main() {
 
 	c := client.New()
 	myGame := newGame(cfg, c)
+
+	spriteSheet, _ := utils.NewSpriteSheet("./images/player.png")
+	player := objects.NewPlayer(0, 0, spriteSheet)
+	myGame.player = player
 
 	go c.ReceiveMessage(myGame.messageChan)
 

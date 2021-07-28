@@ -1,7 +1,8 @@
 package config
 
 import (
-	"github.com/hajimehoshi/ebiten/examples/resources/fonts"
+	"io/ioutil"
+
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )
@@ -9,6 +10,7 @@ import (
 type Config struct {
 	Fonts  Fonts
 	Client Client
+	Screen Screen
 }
 
 type Client struct {
@@ -16,12 +18,21 @@ type Client struct {
 	port    string
 }
 
+type Screen struct {
+	Height int
+	Width  int
+}
+
 type Fonts struct {
 	MplusNormal font.Face
 }
 
 func New() (*Config, error) {
-	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
+	runescapeFont, fileReadErr := ioutil.ReadFile("./fonts/runescape_uf.ttf")
+	if fileReadErr != nil {
+		return nil, fileReadErr
+	}
+	tt, err := opentype.Parse(runescapeFont)
 	if err != nil {
 		return nil, err
 	}
@@ -39,9 +50,14 @@ func New() (*Config, error) {
 		address: "localhost",
 		port:    "8080",
 	}
+	s := Screen{
+		Height: 768,
+		Width:  1366,
+	}
 	cfg := &Config{
 		Fonts:  f,
 		Client: c,
+		Screen: s,
 	}
 
 	return cfg, nil

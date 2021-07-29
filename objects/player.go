@@ -3,8 +3,8 @@ package objects
 import (
 	"image"
 
+	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/utils"
-	"github.com/google/go-cmp/cmp"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -26,8 +26,15 @@ func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 	return pl
 }
 
-func (p *Player) Update() *Player {
-	oldPlayer := *p
+func (p *Player) Update(sender chan client.UpdateJson) {
+	oldPlayer := &Player{
+		Position: &utils.Vector{
+			X: p.Position.X,
+			Y: p.Position.Y,
+		},
+		Width:  p.Width,
+		Height: p.Height,
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
 		p.Position.X -= 60
 	}
@@ -41,11 +48,20 @@ func (p *Player) Update() *Player {
 		p.Position.Y += 60
 	}
 
-	// FIXME: exclude Player.sprite from compare
-	if !cmp.Equal(oldPlayer, *p) {
-		return p
+	if p.Position.X != oldPlayer.Position.X || p.Position.Y != oldPlayer.Position.Y {
+		uJson := client.UpdateJson{
+			Player: &client.Player{
+				Position: client.Vector{
+					X: p.Position.X,
+					Y: p.Position.Y,
+				},
+				Width:  p.Width,
+				Height: p.Height,
+			},
+		}
+
+		sender <- uJson
 	}
-	return nil
 }
 
 func (p *Player) Draw(screen *ebiten.Image) {

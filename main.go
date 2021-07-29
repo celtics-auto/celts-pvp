@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"image/color"
 
 	"log"
 
@@ -12,15 +11,7 @@ import (
 	"github.com/celtics-auto/ebiten-chat/objects"
 	"github.com/celtics-auto/ebiten-chat/utils"
 
-	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/ebiten/v2/text"
-)
-
-const (
-	SCREEN_WIDTH  = 1366
-	SCREEN_HEIGHT = 768
 )
 
 type Message struct {
@@ -33,92 +24,87 @@ func (m *Message) String() string {
 }
 
 type Game struct {
-	text        string
-	history     []Message
-	config      *config.Config
-	client      *client.Client
-	messageChan chan *client.MessageJson
-	player      *objects.Player
-	chat        *chat.Chat
+	config   *config.Config
+	client   *client.Client
+	receiver chan client.UpdateJson
+	sender   chan client.UpdateJson
+	player   *objects.Player
+	chat     *chat.Chat
 }
 
-func newGame(cfg *config.Config, c *client.Client) *Game {
-	msgChan := make(chan *client.MessageJson)
+func newGame(cfg *config.Config, c *client.Client, player *objects.Player, chat *chat.Chat) *Game {
+	receiver := make(chan client.UpdateJson)
+	sender := make(chan client.UpdateJson)
 
 	return &Game{
-		config:      cfg,
-		history:     []Message{},
-		client:      c,
-		messageChan: msgChan,
+		config:   cfg,
+		client:   c,
+		receiver: receiver,
+		sender:   sender,
+		player:   player,
+		chat:     chat,
 	}
 }
 
 func (g *Game) Update() error {
+	// TODO: use game state logic to check for changes
+
 	select {
-	case mJson := <-g.messageChan:
-		msgString := string(mJson.Message[:])
-		g.history = append(g.history, Message{
-			address: mJson.Address,
-			text:    msgString,
-		})
+	case uJson := <-g.receiver:
+		if uJson.Message != nil {
+			g.chat.ReceiveMessages(uJson.Message.Address, uJson.Message.Text)
+		}
+		if uJson.Player != nil {
+			log.Println(uJson.Player.Position)
+		}
+
 	default:
 	}
 
-	// if backspace was pressed
+	// TODO: if backspace was pressed
 	//   delete one char from g.text
 
-	g.text += string(ebiten.InputChars())
+	g.chat.Update(g.sender)
+	g.player.Update(g.sender)
 
-	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		if err := g.client.Conn.WriteMessage(websocket.TextMessage, []byte(g.text)); err != nil {
-			log.Println("write error:", err)
-			return err
-		}
-		g.text = ""
-	}
-
-	updatedPlayer := g.player.Update()
-	if updatedPlayer != nil {
-		g.client.SendMessage(updatedPlayer)
-	}
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	if len(g.history) > 0 {
-		lineHeight := 60
-		for i := len(g.history) - 1; i >= 0; i-- {
-			text.Draw(screen, g.history[i].String(), g.config.Fonts.MplusNormal, 10, SCREEN_HEIGHT-lineHeight, color.White)
-			lineHeight += 30
-		}
-	}
-	text.Draw(screen, g.text, g.config.Fonts.MplusNormal, 10, SCREEN_HEIGHT-20, color.White)
+	g.chat.Draw(screen, g.config.Screen.Height)
 	g.player.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return SCREEN_WIDTH, SCREEN_HEIGHT
+	return g.config.Screen.Width, g.config.Screen.Height
 }
 
 func main() {
-	ebiten.SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT)
-	ebiten.SetWindowTitle("CHAT")
-
 	cfg, err := config.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c := client.New()
-	myGame := newGame(cfg, c)
+	ebiten.SetWindowSize(cfg.Screen.Width, cfg.Screen.Height)
+	ebiten.SetWindowTitle("CHAT")
 
+	c := client.New()
 	spriteSheet, _ := utils.NewSpriteSheet("./images/player.png")
 	player := objects.NewPlayer(0, 0, spriteSheet)
-	myGame.player = player
+	ch := &chat.Chat{
+		Fonts: &cfg.Fonts,
+	}
+	myGame := newGame(cfg, c, player, ch)
 
-	go c.ReceiveMessage(myGame.messageChan)
+	go c.ReceiveUpdates(myGame.receiver)
+	go c.SendUpdates(myGame.sender)
 
 	if err := ebiten.RunGame(myGame); err != nil {
 		log.Fatal(err)
+	}
+
+	closeErr := c.CloseConnection()
+	if closeErr != nil {
+		log.Fatal(closeErr)
 	}
 }

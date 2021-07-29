@@ -6,7 +6,6 @@ import (
 	"github.com/celtics-auto/ebiten-chat/utils"
 	"github.com/google/go-cmp/cmp"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type Player struct {
@@ -28,17 +27,17 @@ func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 
 func (p *Player) Update() *Player {
 	oldPlayer := *p
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
-		p.Position.X -= 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		p.Position.X -= 10
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
-		p.Position.X += 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		p.Position.X += 10
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
-		p.Position.Y -= 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
+		p.Position.Y -= 10
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
-		p.Position.Y += 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
+		p.Position.Y += 10
 	}
 
 	// FIXME: exclude Player.sprite from compare

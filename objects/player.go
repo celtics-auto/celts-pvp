@@ -6,7 +6,6 @@ import (
 	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/utils"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type Player struct {
@@ -35,17 +34,17 @@ func (p *Player) Update(sender chan client.UpdateJson) {
 		Width:  p.Width,
 		Height: p.Height,
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
-		p.Position.X -= 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		p.Position.X -= 10
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
-		p.Position.X += 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		p.Position.X += 10
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
-		p.Position.Y -= 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
+		p.Position.Y -= 10
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
-		p.Position.Y += 60
+	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
+		p.Position.Y += 10
 	}
 
 	if p.Position.X != oldPlayer.Position.X || p.Position.Y != oldPlayer.Position.Y {

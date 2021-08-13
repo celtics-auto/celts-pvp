@@ -91,7 +91,7 @@ func main() {
 	ebiten.SetWindowTitle("CHAT")
 
 	c := client.New(cfg.Env)
-	spriteSheet, _ := utils.NewSpriteSheet("./images/player.png")
+	spriteSheet, _ := utils.NewSpriteSheet("./images/genericPlayer_50x50.png", 50, 50)
 	player := objects.NewPlayer(0, 0, spriteSheet)
 	ch := &chat.Chat{
 		Fonts: &cfg.Fonts,

@@ -1,7 +1,8 @@
 package objects
 
 import (
-	"image"
+	"fmt"
+	"math"
 
 	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/utils"
@@ -14,18 +15,20 @@ type Player struct {
 	Height   int
 	sprite   *utils.SpriteSheet
 	/* \/   ADDED   \/ */
-	animation int  // 0 = 'static', 1 = 'moving', (?) 3 = 'Attacking' (?), ...
-	faceRight bool // true = 'facing right', false = 'facing left'
+	animation int    // 0 = 'static', 1 = 'moving', (?) 3 = 'Attacking' (?), ...
+	face      string // 'N', 'S', 'E', 'W', 'NE', 'NW' ...
+	Speed     int
 }
 
 func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 	pl := &Player{
 		Position:  utils.NewVector(x, y),
 		sprite:    s,
-		Width:     64,
-		Height:    44,
+		Width:     s.FrameWidth,
+		Height:    s.FrameHeight,
 		animation: 0,
-		faceRight: true,
+		face:      "S",
+		Speed:     10,
 	}
 	return pl
 }
@@ -39,34 +42,53 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 		Width:     p.Width,
 		Height:    p.Height,
 		animation: p.animation,
-		faceRight: p.faceRight,
+		face:      p.face,
 	}
-	animation := 0 // Default position = 'static'
-	faceRight := p.faceRight
+	p.animation = 0 // Default position = 'static'
+	face := ""
 
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		p.Position.X -= 10
-		animation = 1
-		faceRight = false
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		p.Position.X += 10
-		animation = 1
-		faceRight = true
-	}
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
-		p.Position.Y -= 10
-		animation = 1
+		face = fmt.Sprintf("%s%s", face, "N")
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
-		p.Position.Y += 10
-		animation = 1
+		face = fmt.Sprintf("%s%s", face, "S")
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		face = fmt.Sprintf("%s%s", face, "E")
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		face = fmt.Sprintf("%s%s", face, "W")
 	}
 
-	p.animation = animation
+	if len(face) > 0 {
+		p.animation = 1
+	}
+
+	switch face {
+	case "N":
+		p.Position.Y -= p.Speed
+	case "S":
+		p.Position.Y += p.Speed
+	case "E":
+		p.Position.X += p.Speed
+	case "W":
+		p.Position.X -= p.Speed
+	case "NE":
+		p.Position.X += int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+	case "NW":
+		p.Position.X -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+	case "SE":
+		p.Position.X += int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y += int(float64(p.Speed) * math.Sin(math.Pi/4))
+	case "SW":
+		p.Position.X -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y += int(float64(p.Speed) * math.Sin(math.Pi/4))
+	}
 
 	if p.Position.X != oldPlayer.Position.X || p.Position.Y != oldPlayer.Position.Y {
-		p.faceRight = faceRight
+		p.face = face
 
 		uJson := client.UpdateJson{
 			Player: &client.Player{
@@ -77,7 +99,7 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 				Width:     p.Width,
 				Height:    p.Height,
 				Animation: p.animation,
-				FaceRight: p.faceRight,
+				Face:      p.face,
 			},
 		}
 
@@ -87,41 +109,12 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 	}
 }
 
-func (p *Player) subImage(lin int, col int) *ebiten.Image {
-	x0 := col * p.Width
-	y0 := lin * p.Height
-
-	rec := image.Rect(x0, y0, x0+p.Width, y0+p.Height)
-	subFrame := p.sprite.Image.SubImage(rec).(*ebiten.Image)
-
-	return subFrame
-}
-
-func (p *Player) updateImage(count int) *ebiten.Image {
-	var subFrame *ebiten.Image
-
-	if p.animation == 0 {
-		col := (count / 5) % 6
-		subFrame = p.subImage(3, col) // Static animation
-	} else if p.animation == 1 {
-		col := (count / 5) % 8
-		subFrame = p.subImage(2, col) // Moving animation
-	}
-
-	return subFrame
-}
-
 func (p *Player) Draw(screen *ebiten.Image, count int) {
 	op := &ebiten.DrawImageOptions{}
 
-	if !p.faceRight {
-		op.GeoM.Scale(-1, 1)
-		op.GeoM.Translate(float64(p.Width), 0)
-	}
-
 	op.GeoM.Translate(float64(p.Position.X), float64(p.Position.Y))
 
-	sub := p.updateImage(count)
+	p.sprite.UpdatePlayerFrame(p.face, p.animation, count)
 
-	screen.DrawImage(sub, op)
+	screen.DrawImage(p.sprite.CurrentFrame, op)
 }

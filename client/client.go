@@ -18,7 +18,7 @@ type Player struct {
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
 	Animation int    `json:"animation"`
-	FaceRight bool   `json:"faceRight"`
+	Face      string `json:"face"`
 }
 
 type Message struct {

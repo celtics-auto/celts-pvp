@@ -24,6 +24,7 @@ func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 		sprite:    s,
 		Width:     64,
 		Height:    44,
+		animation: 0,
 		faceRight: true,
 	}
 	return pl
@@ -35,8 +36,10 @@ func (p *Player) Update(sender chan client.UpdateJson) {
 			X: p.Position.X,
 			Y: p.Position.Y,
 		},
-		Width:  p.Width,
-		Height: p.Height,
+		Width:     p.Width,
+		Height:    p.Height,
+		animation: p.animation,
+		faceRight: p.faceRight,
 	}
 	animation := 0 // Default position = 'static'
 	faceRight := p.faceRight
@@ -71,8 +74,10 @@ func (p *Player) Update(sender chan client.UpdateJson) {
 					X: p.Position.X,
 					Y: p.Position.Y,
 				},
-				Width:  p.Width,
-				Height: p.Height,
+				Width:     p.Width,
+				Height:    p.Height,
+				Animation: p.animation,
+				FaceRight: p.faceRight,
 			},
 		}
 

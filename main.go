@@ -56,7 +56,7 @@ func (g *Game) Update() error {
 			g.chat.ReceiveMessages(uJson.Message.Address, uJson.Message.Text)
 		}
 		if uJson.Player != nil {
-			log.Println(uJson.Player.Position)
+			log.Println("Test")
 		}
 
 	default:

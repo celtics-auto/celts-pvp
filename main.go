@@ -30,6 +30,7 @@ type Game struct {
 	sender   chan client.UpdateJson
 	player   *objects.Player
 	chat     *chat.Chat
+	count    int
 }
 
 func newGame(cfg *config.Config, c *client.Client, player *objects.Player, chat *chat.Chat) *Game {
@@ -67,12 +68,13 @@ func (g *Game) Update() error {
 	g.chat.Update(g.sender)
 	g.player.Update(g.sender)
 
+	g.count++
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.chat.Draw(screen, g.config.Screen.Height)
-	g.player.Draw(screen)
+	g.player.Draw(screen, g.count)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

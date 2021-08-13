@@ -11,6 +11,7 @@ type Config struct {
 	Fonts  Fonts
 	Client Client
 	Screen Screen
+	Env    string
 }
 
 type Client struct {
@@ -58,6 +59,7 @@ func New() (*Config, error) {
 		Fonts:  f,
 		Client: c,
 		Screen: s,
+		Env:    "development",
 	}
 
 	return cfg, nil

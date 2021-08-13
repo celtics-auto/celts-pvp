@@ -30,7 +30,7 @@ func (ch *Chat) ReceiveMessages(address string, text []byte) {
 	})
 }
 
-func (ch *Chat) Update(sender chan client.UpdateJson) {
+func (ch *Chat) Update(sender chan client.UpdateJson, env string) {
 	ch.input += string(ebiten.InputChars())
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
@@ -43,7 +43,10 @@ func (ch *Chat) Update(sender chan client.UpdateJson) {
 				Text: message,
 			},
 		}
-		sender <- *uJson
+
+		if env != "development" {
+			sender <- *uJson
+		}
 	}
 }
 

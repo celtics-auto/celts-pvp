@@ -1,7 +1,8 @@
 package objects
 
 import (
-	"image"
+	"fmt"
+	"math"
 
 	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/utils"
@@ -9,65 +10,109 @@ import (
 )
 
 type Player struct {
-	Position *utils.Vector
-	Width    int
-	Height   int
-	sprite   *utils.SpriteSheet
+	Position  *utils.Vector
+	Width     int
+	Height    int
+	sprite    *utils.SpriteSheet
+	animation int    // 0 = 'static', 1 = 'moving', (?) 3 = 'Attacking' (?), ...
+	face      string // 'N', 'S', 'E', 'W', 'NE', 'NW' ...
+	Speed     int
 }
 
 func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 	pl := &Player{
-		Position: utils.NewVector(x, y),
-		sprite:   s,
-		Width:    64,
-		Height:   44,
+		Position:  utils.NewVector(x, y),
+		sprite:    s,
+		Width:     s.FrameWidth,
+		Height:    s.FrameHeight,
+		animation: 0,
+		face:      "S",
+		Speed:     10,
 	}
 	return pl
 }
 
-func (p *Player) Update(sender chan client.UpdateJson) {
+func (p *Player) Update(sender chan client.UpdateJson, env string) {
 	oldPlayer := &Player{
 		Position: &utils.Vector{
 			X: p.Position.X,
 			Y: p.Position.Y,
 		},
-		Width:  p.Width,
-		Height: p.Height,
+		Width:     p.Width,
+		Height:    p.Height,
+		animation: p.animation,
+		face:      p.face,
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		p.Position.X -= 10
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		p.Position.X += 10
-	}
+	p.animation = 0 // Default position = 'static'
+	face := ""
+
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
-		p.Position.Y -= 10
+		face = fmt.Sprintf("%s%s", face, "N")
+	} else if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
+		face = fmt.Sprintf("%s%s", face, "S")
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
-		p.Position.Y += 10
+
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		face = fmt.Sprintf("%s%s", face, "E")
+	} else if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		face = fmt.Sprintf("%s%s", face, "W")
+	}
+
+	if len(face) > 0 {
+		p.animation = 1
+	}
+
+	switch face {
+	case "N":
+		p.Position.Y -= p.Speed
+	case "S":
+		p.Position.Y += p.Speed
+	case "E":
+		p.Position.X += p.Speed
+	case "W":
+		p.Position.X -= p.Speed
+	case "NE":
+		p.Position.X += int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+	case "NW":
+		p.Position.X -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+	case "SE":
+		p.Position.X += int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y += int(float64(p.Speed) * math.Sin(math.Pi/4))
+	case "SW":
+		p.Position.X -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y += int(float64(p.Speed) * math.Sin(math.Pi/4))
 	}
 
 	if p.Position.X != oldPlayer.Position.X || p.Position.Y != oldPlayer.Position.Y {
+		p.face = face
+
 		uJson := client.UpdateJson{
 			Player: &client.Player{
 				Position: client.Vector{
 					X: p.Position.X,
 					Y: p.Position.Y,
 				},
-				Width:  p.Width,
-				Height: p.Height,
+				Width:     p.Width,
+				Height:    p.Height,
+				Animation: p.animation,
+				Face:      p.face,
 			},
 		}
 
-		sender <- uJson
+		if env != "development" {
+			sender <- uJson
+		}
 	}
 }
 
-func (p *Player) Draw(screen *ebiten.Image) {
+func (p *Player) Draw(screen *ebiten.Image, count int) {
 	op := &ebiten.DrawImageOptions{}
 
 	op.GeoM.Translate(float64(p.Position.X), float64(p.Position.Y))
-	rec := image.Rect(0, 0, p.Width, p.Height)
-	sub := p.sprite.Image.SubImage(rec).(*ebiten.Image)
-	screen.DrawImage(sub, op)
+
+	p.sprite.UpdatePlayerFrame(p.face, p.animation, count)
+
+	screen.DrawImage(p.sprite.CurrentFrame, op)
 }

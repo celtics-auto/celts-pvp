@@ -14,9 +14,11 @@ type Vector struct {
 }
 
 type Player struct {
-	Position Vector `json:"position"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
+	Position  Vector `json:"position"`
+	Width     int    `json:"width"`
+	Height    int    `json:"height"`
+	Animation int    `json:"animation"`
+	Face      string `json:"face"`
 }
 
 type Message struct {
@@ -62,7 +64,7 @@ func (c *Client) SendUpdates(sender chan UpdateJson) {
 
 		err := c.Conn.WriteJSON(uJson)
 		if err != nil {
-			log.Println("read:", err)
+			log.Println("write:", err)
 		}
 
 	}
@@ -78,10 +80,13 @@ func (c *Client) CloseConnection() error {
 	return nil
 }
 
-func New() *Client {
+func New(env string) *Client {
 	c := &Client{}
-	conn := c.connect()
-	c.Conn = conn
+
+	if env != "development" {
+		conn := c.connect()
+		c.Conn = conn
+	}
 
 	return c
 }

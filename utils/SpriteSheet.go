@@ -9,6 +9,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+const STAGGER_FRAMES = 7
+
 type SpriteSheet struct {
 	Image        *ebiten.Image
 	CurrentFrame *ebiten.Image
@@ -34,6 +36,7 @@ func (s *SpriteSheet) subImage(lin int, col int) *ebiten.Image {
 }
 
 func (s *SpriteSheet) UpdatePlayerFrame(face string, animation int, count int) {
+	// TODO: Game logic; move to Player.go
 	m := make(map[string]int)
 
 	m["N"] = 0
@@ -51,7 +54,7 @@ func (s *SpriteSheet) UpdatePlayerFrame(face string, animation int, count int) {
 		s.CurrentFrame = s.subImage(m[face], col)
 	} else if animation == 1 {
 		// Moving animation
-		col := (count / 7) % 4
+		col := (count / STAGGER_FRAMES) % 4
 		s.CurrentFrame = s.subImage(m[face], col)
 	}
 }

@@ -10,11 +10,10 @@ import (
 )
 
 type Player struct {
-	Position *utils.Vector
-	Width    int
-	Height   int
-	sprite   *utils.SpriteSheet
-	/* \/   ADDED   \/ */
+	Position  *utils.Vector
+	Width     int
+	Height    int
+	sprite    *utils.SpriteSheet
 	animation int    // 0 = 'static', 1 = 'moving', (?) 3 = 'Attacking' (?), ...
 	face      string // 'N', 'S', 'E', 'W', 'NE', 'NW' ...
 	Speed     int
@@ -49,14 +48,13 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
 		face = fmt.Sprintf("%s%s", face, "N")
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
 		face = fmt.Sprintf("%s%s", face, "S")
 	}
+
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
 		face = fmt.Sprintf("%s%s", face, "E")
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 		face = fmt.Sprintf("%s%s", face, "W")
 	}
 

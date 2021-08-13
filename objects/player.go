@@ -30,7 +30,7 @@ func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 	return pl
 }
 
-func (p *Player) Update(sender chan client.UpdateJson) {
+func (p *Player) Update(sender chan client.UpdateJson, env string) {
 	oldPlayer := &Player{
 		Position: &utils.Vector{
 			X: p.Position.X,
@@ -81,7 +81,9 @@ func (p *Player) Update(sender chan client.UpdateJson) {
 			},
 		}
 
-		sender <- uJson
+		if env != "development" {
+			sender <- uJson
+		}
 	}
 }
 

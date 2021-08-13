@@ -65,8 +65,8 @@ func (g *Game) Update() error {
 	// TODO: if backspace was pressed
 	//   delete one char from g.text
 
-	g.chat.Update(g.sender)
-	g.player.Update(g.sender)
+	g.chat.Update(g.sender, g.config.Env)
+	g.player.Update(g.sender, g.config.Env)
 
 	g.count++
 	return nil
@@ -90,7 +90,7 @@ func main() {
 	ebiten.SetWindowSize(cfg.Screen.Width, cfg.Screen.Height)
 	ebiten.SetWindowTitle("CHAT")
 
-	c := client.New()
+	c := client.New(cfg.Env)
 	spriteSheet, _ := utils.NewSpriteSheet("./images/player.png")
 	player := objects.NewPlayer(0, 0, spriteSheet)
 	ch := &chat.Chat{
@@ -98,8 +98,10 @@ func main() {
 	}
 	myGame := newGame(cfg, c, player, ch)
 
-	go c.ReceiveUpdates(myGame.receiver)
-	go c.SendUpdates(myGame.sender)
+	if cfg.Env != "development" {
+		go c.ReceiveUpdates(myGame.receiver)
+		go c.SendUpdates(myGame.sender)
+	}
 
 	if err := ebiten.RunGame(myGame); err != nil {
 		log.Fatal(err)

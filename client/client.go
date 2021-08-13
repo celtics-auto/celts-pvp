@@ -80,10 +80,13 @@ func (c *Client) CloseConnection() error {
 	return nil
 }
 
-func New() *Client {
+func New(env string) *Client {
 	c := &Client{}
-	conn := c.connect()
-	c.Conn = conn
+
+	if env != "development" {
+		conn := c.connect()
+		c.Conn = conn
+	}
 
 	return c
 }

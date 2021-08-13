@@ -1,37 +1,40 @@
 package client
 
 import (
-	"fmt"
 	"log"
 	"net/url"
+	"time"
 
-	"github.com/celtics-auto/ebiten-chat/objects"
 	"github.com/gorilla/websocket"
 )
 
-type vector struct {
+type Vector struct {
 	X int `json:"x"`
 	Y int `json:"y"`
 }
 
-type player struct {
-	Position vector `json:"position"`
+type Player struct {
+	Position Vector `json:"position"`
 	Width    int    `json:"width"`
 	Height   int    `json:"height"`
 }
 
-type MessageJson struct {
+type Message struct {
 	Address string `json:"address"`
-	Message []byte `json:"message"`
+	Text    []byte `json:"text"`
+}
+
+type UpdateJson struct {
+	Message *Message `json:"message"`
+	Player  *Player  `json:"player"`
 }
 
 type Client struct {
-	Conn    *websocket.Conn
-	Message *MessageJson
+	Conn *websocket.Conn
 }
 
 func (c *Client) connect() *websocket.Conn {
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/connection"}
+	u := url.URL{Scheme: "ws", Host: "localhost:3000", Path: "/connection"}
 	log.Printf("connecting to %s", u.String())
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -41,33 +44,42 @@ func (c *Client) connect() *websocket.Conn {
 	return conn
 }
 
-func (c *Client) ReceiveMessage(msgChan chan *MessageJson) {
-	fmt.Println("Waiting messages...")
+func (c *Client) ReceiveUpdates(receiver chan UpdateJson) {
+	log.Println("Waiting messages...")
 	for {
-		err := c.Conn.ReadJSON(c.Message)
+		u := UpdateJson{}
+		err := c.Conn.ReadJSON(&u)
 		if err != nil {
-			fmt.Println("read:", err)
+			log.Println("read:", err)
 		}
-		msgChan <- c.Message
+		receiver <- u
 	}
 }
 
-func (c *Client) SendMessage(p *objects.Player) error {
-	playerJson := player{
-		Position: vector(*p.Position),
-		Width:    p.Width,
-		Height:   p.Height,
-	}
-	err := c.Conn.WriteJSON(playerJson)
+func (c *Client) SendUpdates(sender chan UpdateJson) {
+	for {
+		uJson := <-sender
 
-	return err
+		err := c.Conn.WriteJSON(uJson)
+		if err != nil {
+			log.Println("read:", err)
+		}
+
+	}
+}
+
+func (c *Client) CloseConnection() error {
+	err := c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		return err
+	}
+	// FIXME: tá ruim
+	time.Sleep(1 * time.Second)
+	return nil
 }
 
 func New() *Client {
-	m := &MessageJson{}
-	c := &Client{
-		Message: m,
-	}
+	c := &Client{}
 	conn := c.connect()
 	c.Conn = conn
 

@@ -107,12 +107,38 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 	}
 }
 
+func (p *Player) updatePlayerFrame(count int) {
+	animSeq := make([][2]int, 0) // Spritesheet frames {row, col} indexes
+
+	m := make(map[string]int) // Spritesheet row indexes for each direction
+	m["N"] = 0
+	m["S"] = 1
+	m["E"] = 3
+	m["W"] = 6
+	m["NE"] = 4
+	m["NW"] = 7
+	m["SE"] = 2
+	m["SW"] = 5
+
+	switch p.animation {
+	case 0:
+		animSeq = append(animSeq, [2]int{m[p.face], 4})
+	case 1:
+		for i := 0; i <= 3; i++ {
+			animSeq = append(animSeq, [2]int{m[p.face], i})
+		}
+	}
+
+	p.sprite.UpdateFrame(animSeq, count)
+
+}
+
 func (p *Player) Draw(screen *ebiten.Image, count int) {
 	op := &ebiten.DrawImageOptions{}
 
 	op.GeoM.Translate(float64(p.Position.X), float64(p.Position.Y))
 
-	p.sprite.UpdatePlayerFrame(p.face, p.animation, count)
+	p.updatePlayerFrame(count)
 
 	screen.DrawImage(p.sprite.CurrentFrame, op)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/utils"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -14,8 +13,8 @@ type Player struct {
 	Width     int
 	Height    int
 	sprite    *utils.SpriteSheet
-	animation int    // 0 = 'static', 1 = 'moving', (?) 3 = 'Attacking' (?), ...
-	face      string // 'N', 'S', 'E', 'W', 'NE', 'NW' ...
+	Animation int    // 0 = 'static', 1 = 'moving', (?) 3 = 'Attacking' (?), ...
+	Face      string // 'N', 'S', 'E', 'W', 'NE', 'NW' ...
 	Speed     int
 }
 
@@ -25,14 +24,14 @@ func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 		sprite:    s,
 		Width:     s.FrameWidth,
 		Height:    s.FrameHeight,
-		animation: 0,
-		face:      "S",
+		Animation: 0,
+		Face:      "S",
 		Speed:     10,
 	}
 	return pl
 }
 
-func (p *Player) Update(sender chan client.UpdateJson, env string) {
+func (p *Player) Update() bool {
 	oldPlayer := &Player{
 		Position: &utils.Vector{
 			X: p.Position.X,
@@ -40,10 +39,10 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 		},
 		Width:     p.Width,
 		Height:    p.Height,
-		animation: p.animation,
-		face:      p.face,
+		Animation: p.Animation,
+		Face:      p.Face,
 	}
-	p.animation = 0 // Default position = 'static'
+	p.Animation = 0 // Default position = 'static'
 	face := ""
 
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
@@ -56,10 +55,6 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 		face = fmt.Sprintf("%s%s", face, "E")
 	} else if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 		face = fmt.Sprintf("%s%s", face, "W")
-	}
-
-	if len(face) > 0 {
-		p.animation = 1
 	}
 
 	switch face {
@@ -86,25 +81,13 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 	}
 
 	if p.Position.X != oldPlayer.Position.X || p.Position.Y != oldPlayer.Position.Y {
-		p.face = face
+		p.Face = face
+		p.Animation = 1
 
-		uJson := client.UpdateJson{
-			Player: &client.Player{
-				Position: client.Vector{
-					X: p.Position.X,
-					Y: p.Position.Y,
-				},
-				Width:     p.Width,
-				Height:    p.Height,
-				Animation: p.animation,
-				Face:      p.face,
-			},
-		}
-
-		if env != "development" {
-			sender <- uJson
-		}
+		return true
 	}
+
+	return false
 }
 
 func (p *Player) Draw(screen *ebiten.Image, count int) {
@@ -112,7 +95,7 @@ func (p *Player) Draw(screen *ebiten.Image, count int) {
 
 	op.GeoM.Translate(float64(p.Position.X), float64(p.Position.Y))
 
-	p.sprite.UpdatePlayerFrame(p.face, p.animation, count)
+	p.sprite.UpdatePlayerFrame(p.Face, p.Animation, count)
 
 	screen.DrawImage(p.sprite.CurrentFrame, op)
 }

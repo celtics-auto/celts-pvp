@@ -11,9 +11,10 @@ import (
 
 type Player struct {
 	Position  *utils.Vector
+	sprite    *utils.SpriteSheet
+	HitBox    *utils.BoundingBox
 	Width     int
 	Height    int
-	sprite    *utils.SpriteSheet
 	animation int    // 0 = 'static', 1 = 'moving', (?) 3 = 'Attacking' (?), ...
 	face      string // 'N', 'S', 'E', 'W', 'NE', 'NW' ...
 	Speed     int
@@ -23,6 +24,7 @@ func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 	pl := &Player{
 		Position:  utils.NewVector(x, y),
 		sprite:    s,
+		HitBox:    utils.NewBoundigBox(utils.Vector{X: x - s.FrameWidth/2, Y: y - s.FrameHeight/2}, utils.Vector{X: x + s.FrameWidth/2, Y: y + s.FrameHeight/2}),
 		Width:     s.FrameWidth,
 		Height:    s.FrameHeight,
 		animation: 0,
@@ -32,7 +34,7 @@ func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
 	return pl
 }
 
-func (p *Player) Update(sender chan client.UpdateJson, env string) {
+func (p *Player) Update(sender chan client.UpdateJson, devMode bool) {
 	oldPlayer := &Player{
 		Position: &utils.Vector{
 			X: p.Position.X,
@@ -87,6 +89,10 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 
 	if p.Position.X != oldPlayer.Position.X || p.Position.Y != oldPlayer.Position.Y {
 		p.face = face
+		p.HitBox.V0.X = p.Position.X - p.Width/2
+		p.HitBox.V0.Y = p.Position.Y - p.Height/2
+		p.HitBox.V1.X = p.Position.X + p.Width/2
+		p.HitBox.V1.Y = p.Position.Y + p.Height/2
 
 		uJson := client.UpdateJson{
 			Player: &client.Player{
@@ -101,18 +107,44 @@ func (p *Player) Update(sender chan client.UpdateJson, env string) {
 			},
 		}
 
-		if env != "development" {
+		if !devMode {
 			sender <- uJson
 		}
 	}
 }
 
+func (p *Player) updatePlayerFrame(count int) {
+	animSeq := make([][2]int, 0) // Spritesheet frames {row, col} indexes
+
+	m := make(map[string]int) // Spritesheet row indexes for each direction
+	m["N"] = 0
+	m["S"] = 1
+	m["E"] = 3
+	m["W"] = 6
+	m["NE"] = 4
+	m["NW"] = 7
+	m["SE"] = 2
+	m["SW"] = 5
+
+	switch p.animation {
+	case 0:
+		animSeq = append(animSeq, [2]int{m[p.face], 4})
+	case 1:
+		for i := 0; i <= 3; i++ {
+			animSeq = append(animSeq, [2]int{m[p.face], i})
+		}
+	}
+
+	p.sprite.UpdateFrame(animSeq, count)
+
+}
+
 func (p *Player) Draw(screen *ebiten.Image, count int) {
 	op := &ebiten.DrawImageOptions{}
 
-	op.GeoM.Translate(float64(p.Position.X), float64(p.Position.Y))
+	op.GeoM.Translate(float64(p.Position.X-p.sprite.FrameWidth/2), float64(p.Position.Y-p.sprite.FrameHeight/2))
 
-	p.sprite.UpdatePlayerFrame(p.face, p.animation, count)
+	p.updatePlayerFrame(count)
 
 	screen.DrawImage(p.sprite.CurrentFrame, op)
 }

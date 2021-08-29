@@ -8,6 +8,7 @@ import (
 	"github.com/celtics-auto/ebiten-chat/chat"
 	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/config"
+	devutils "github.com/celtics-auto/ebiten-chat/dev"
 	"github.com/celtics-auto/ebiten-chat/objects"
 	"github.com/celtics-auto/ebiten-chat/utils"
 
@@ -30,6 +31,7 @@ type Game struct {
 	sender   chan client.UpdateJson
 	player   *objects.Player
 	chat     *chat.Chat
+	devMode  bool
 	count    int
 }
 
@@ -44,6 +46,7 @@ func newGame(cfg *config.Config, c *client.Client, player *objects.Player, chat 
 		sender:   sender,
 		player:   player,
 		chat:     chat,
+		devMode:  cfg.Env == "development",
 	}
 }
 
@@ -65,8 +68,8 @@ func (g *Game) Update() error {
 	// TODO: if backspace was pressed
 	//   delete one char from g.text
 
-	g.chat.Update(g.sender, g.config.Env)
-	g.player.Update(g.sender, g.config.Env)
+	g.chat.Update(g.sender, g.devMode)
+	g.player.Update(g.sender, g.devMode)
 
 	g.count++
 	return nil
@@ -75,6 +78,10 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.chat.Draw(screen, g.config.Screen.Height)
 	g.player.Draw(screen, g.count)
+
+	if g.devMode {
+		devutils.Draw(screen, g.player)
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -98,7 +105,7 @@ func main() {
 	}
 	myGame := newGame(cfg, c, player, ch)
 
-	if cfg.Env != "development" {
+	if !myGame.devMode {
 		go c.ReceiveUpdates(myGame.receiver)
 		go c.SendUpdates(myGame.sender)
 	}

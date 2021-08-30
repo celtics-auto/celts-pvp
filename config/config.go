@@ -15,8 +15,10 @@ type Config struct {
 }
 
 type Client struct {
-	address string
-	port    string
+	Address string
+	Port    string
+	Path    string
+	Host    string
 }
 
 type Screen struct {
@@ -48,8 +50,8 @@ func New() (*Config, error) {
 		MplusNormal: mpn,
 	}
 	c := Client{
-		address: "localhost",
-		port:    "8080",
+		Path: "/connection",
+		Host: "localhost:3000",
 	}
 	s := Screen{
 		Height: 768,

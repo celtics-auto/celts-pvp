@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image/color"
 
-	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/config"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -12,49 +11,44 @@ import (
 )
 
 type Message struct {
-	address string
-	text    string
+	Address string
+	Text    string
 }
 
 type Chat struct {
 	input   string
-	history []Message
+	History []Message
 	Fonts   *config.Fonts
 }
 
 func (ch *Chat) ReceiveMessages(address string, text []byte) {
 	msgString := string(text[:])
-	ch.history = append(ch.history, Message{
-		address: address,
-		text:    msgString,
+	ch.History = append(ch.History, Message{
+		Address: address,
+		Text:    msgString,
 	})
 }
 
-func (ch *Chat) Update(sender chan client.UpdateJson, devMode bool) {
+func (ch *Chat) Update() bool {
 	ch.input += string(ebiten.InputChars())
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		message := []byte(ch.input)
+		ch.History = append(ch.History, Message{
+			Text: ch.input,
+		})
 		ch.input = ""
 
-		// FIXME: pegar endereço do client para colocar junto a mensagem
-		uJson := &client.UpdateJson{
-			Message: &client.Message{
-				Text: message,
-			},
-		}
-
-		if !devMode {
-			sender <- *uJson
-		}
+		return true
 	}
+
+	return false
 }
 
 func (ch *Chat) Draw(screen *ebiten.Image, screenHeight int) {
-	if len(ch.history) > 0 {
+	if len(ch.History) > 0 {
 		lineHeight := 60
-		for i := len(ch.history) - 1; i >= 0; i-- {
-			txt := fmt.Sprintf("%s: %s", ch.history[i].address, ch.history[i].text)
+		for i := len(ch.History) - 1; i >= 0; i-- {
+			txt := fmt.Sprintf("%s: %s", ch.History[i].Address, ch.History[i].Text)
 			text.Draw(screen, txt, ch.Fonts.MplusNormal, 10, screenHeight-lineHeight, color.White)
 			lineHeight += 30
 		}

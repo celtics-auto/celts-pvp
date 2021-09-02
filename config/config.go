@@ -61,7 +61,7 @@ func New() (*Config, error) {
 		Fonts:  f,
 		Client: c,
 		Screen: s,
-		Env:    "development",
+		Env:    "production",
 	}
 
 	return cfg, nil

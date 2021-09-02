@@ -1,6 +1,9 @@
 package client
 
 import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
 	"log"
 	"net/url"
 	"time"
@@ -34,15 +37,32 @@ func NewWsConnection(host, path string) (*WsConnection, error) {
 }
 
 func (w *WsConnection) Read(u *UpdateJson) {
-	log.Println("Waiting messages...")
-	err := w.Connection.ReadJSON(&u)
-	if err != nil {
+	msgType, msg, err := w.Connection.ReadMessage()
+	if err != nil || msgType != websocket.BinaryMessage {
 		log.Println("read:", err)
 	}
+
+	v := Vector{}
+	buf := bytes.NewReader(msg)
+	if err := binary.Read(buf, binary.LittleEndian, &v); err != nil {
+		fmt.Printf("failed to decode byte array: %v", err)
+		return
+	}
+
+	u.Player = &Player{
+		Position: v,
+	}
+	fmt.Printf("x: %d - y: %d", u.Player.Position.X, u.Player.Position.Y)
 }
 
 func (w *WsConnection) Write(u *UpdateJson) {
-	err := w.Connection.WriteJSON(u)
+	posX := u.Player.Position.X
+	posY := u.Player.Position.Y
+	buf := make([]byte, 4)
+	binary.LittleEndian.PutUint16(buf[0:], posX)
+	binary.LittleEndian.PutUint16(buf[2:], posY)
+
+	err := w.Connection.WriteMessage(websocket.BinaryMessage, buf)
 	if err != nil {
 		log.Println("write:", err)
 	}

@@ -90,6 +90,7 @@ func (p *Player) Update() bool {
 		p.HitBox.V1.X = p.Position.X + p.Width/2
 		p.HitBox.V1.Y = p.Position.Y + p.Height/2
 
+		// log.Printf("x: %d - y: %d", p.Position.X, p.Position.Y)
 		return true
 	}
 

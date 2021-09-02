@@ -1,8 +1,6 @@
 package game
 
 import (
-	"log"
-
 	"github.com/celtics-auto/ebiten-chat/chat"
 	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/config"
@@ -36,7 +34,7 @@ func (g *Game) Update() error {
 			g.chat.ReceiveMessages(uJson.Message.Address, uJson.Message.Text)
 		}
 		if uJson.Player != nil {
-			log.Println("Test")
+			// log.Printf("x: %d - y: %d", uJson.Player.Position.X, uJson.Player.Position.Y)
 		}
 
 	default:
@@ -47,8 +45,8 @@ func (g *Game) Update() error {
 	if g.player.Update() {
 		uJson.Player = &client.Player{
 			Position: client.Vector{
-				X: g.player.Position.X,
-				Y: g.player.Position.Y,
+				X: uint16(g.player.Position.X),
+				Y: uint16(g.player.Position.Y),
 			},
 			Width:     g.player.Width,
 			Height:    g.player.Height,

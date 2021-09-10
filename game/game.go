@@ -1,6 +1,8 @@
 package game
 
 import (
+	"log"
+
 	"github.com/celtics-auto/ebiten-chat/chat"
 	"github.com/celtics-auto/ebiten-chat/client"
 	"github.com/celtics-auto/ebiten-chat/config"
@@ -11,8 +13,8 @@ import (
 type Game struct {
 	config   *config.Config
 	client   *client.Client
-	Receiver chan client.UpdateJson
-	Sender   chan client.UpdateJson
+	Receiver chan objects.Player
+	Sender   chan objects.Player
 	player   *objects.Player
 	chat     *chat.Chat
 	count    int
@@ -29,48 +31,14 @@ func New(cfg *config.Config, c *client.Client, player *objects.Player, chat *cha
 
 func (g *Game) Update() error {
 	select {
-	case uJson := <-g.client.Receiver:
-		if uJson.Message != nil {
-			g.chat.ReceiveMessages(uJson.Message.Address, uJson.Message.Text)
-		}
-		if uJson.Player != nil {
-			// log.Printf("x: %d - y: %d", uJson.Player.Position.X, uJson.Player.Position.Y)
-		}
-
+	case p := <-g.client.Receiver:
+		log.Printf("x: %d - y: %d\n", p.Position.X, p.Position.Y)
 	default:
 	}
 
-	uJson := client.UpdateJson{}
-	sendUpdate := false
 	if g.player.Update() {
-		uJson.Player = &client.Player{
-			Position: client.Vector{
-				X: uint16(g.player.Position.X),
-				Y: uint16(g.player.Position.Y),
-			},
-			Width:     g.player.Width,
-			Height:    g.player.Height,
-			Animation: g.player.Animation,
-			Face:      g.player.Face,
-		}
-		sendUpdate = true
+		g.client.Sender <- g.player
 	}
-
-	if g.chat.Update() {
-		message := g.chat.History[len(g.chat.History)-1]
-		mString := []byte(message.Text)
-
-		// FIXME: pegar endereço do client para colocar junto a mensagem
-		uJson.Message = &client.Message{
-			Text: mString,
-		}
-		sendUpdate = true
-	}
-
-	if sendUpdate {
-		g.client.Sender <- &uJson
-	}
-
 	g.count++
 	return nil
 }

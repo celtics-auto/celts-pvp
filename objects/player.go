@@ -19,11 +19,20 @@ type Player struct {
 	Speed     int
 }
 
-func NewPlayer(x, y int, s *utils.SpriteSheet) *Player {
+func NewPlayer(x, y int16, s *utils.SpriteSheet) *Player {
 	pl := &Player{
-		Position:  utils.NewVector(x, y),
-		sprite:    s,
-		HitBox:    utils.NewBoundigBox(utils.Vector{X: x - s.FrameWidth/2, Y: y - s.FrameHeight/2}, utils.Vector{X: x + s.FrameWidth/2, Y: y + s.FrameHeight/2}),
+		Position: utils.NewVector(x, y),
+		sprite:   s,
+		HitBox: utils.NewBoundigBox(
+			utils.Vector{
+				X: x - int16(s.FrameWidth/2),
+				Y: y - int16(s.FrameHeight/2),
+			},
+			utils.Vector{
+				X: x + int16(s.FrameWidth/2),
+				Y: y + int16(s.FrameHeight/2),
+			},
+		),
 		Width:     s.FrameWidth,
 		Height:    s.FrameHeight,
 		Animation: 0,
@@ -61,34 +70,34 @@ func (p *Player) Update() bool {
 
 	switch face {
 	case "N":
-		p.Position.Y -= p.Speed
+		p.Position.Y -= int16(p.Speed)
 	case "S":
-		p.Position.Y += p.Speed
+		p.Position.Y += int16(p.Speed)
 	case "E":
-		p.Position.X += p.Speed
+		p.Position.X += int16(p.Speed)
 	case "W":
-		p.Position.X -= p.Speed
+		p.Position.X -= int16(p.Speed)
 	case "NE":
-		p.Position.X += int(float64(p.Speed) * math.Sin(math.Pi/4))
-		p.Position.Y -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.X += int16(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y -= int16(float64(p.Speed) * math.Sin(math.Pi/4))
 	case "NW":
-		p.Position.X -= int(float64(p.Speed) * math.Sin(math.Pi/4))
-		p.Position.Y -= int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.X -= int16(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y -= int16(float64(p.Speed) * math.Sin(math.Pi/4))
 	case "SE":
-		p.Position.X += int(float64(p.Speed) * math.Sin(math.Pi/4))
-		p.Position.Y += int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.X += int16(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y += int16(float64(p.Speed) * math.Sin(math.Pi/4))
 	case "SW":
-		p.Position.X -= int(float64(p.Speed) * math.Sin(math.Pi/4))
-		p.Position.Y += int(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.X -= int16(float64(p.Speed) * math.Sin(math.Pi/4))
+		p.Position.Y += int16(float64(p.Speed) * math.Sin(math.Pi/4))
 	}
 
 	if p.Position.X != oldPlayer.Position.X || p.Position.Y != oldPlayer.Position.Y {
 		p.Face = face
 		p.Animation = 1
-		p.HitBox.V0.X = p.Position.X - p.Width/2
-		p.HitBox.V0.Y = p.Position.Y - p.Height/2
-		p.HitBox.V1.X = p.Position.X + p.Width/2
-		p.HitBox.V1.Y = p.Position.Y + p.Height/2
+		p.HitBox.V0.X = p.Position.X - int16(p.Width/2)
+		p.HitBox.V0.Y = p.Position.Y - int16(p.Height/2)
+		p.HitBox.V1.X = p.Position.X + int16(p.Width/2)
+		p.HitBox.V1.Y = p.Position.Y + int16(p.Height/2)
 
 		// log.Printf("x: %d - y: %d", p.Position.X, p.Position.Y)
 		return true
@@ -126,7 +135,10 @@ func (p *Player) updatePlayerFrame(count int) {
 func (p *Player) Draw(screen *ebiten.Image, count int) {
 	op := &ebiten.DrawImageOptions{}
 
-	op.GeoM.Translate(float64(p.Position.X-p.sprite.FrameWidth/2), float64(p.Position.Y-p.sprite.FrameHeight/2))
+	op.GeoM.Translate(
+		float64(p.Position.X-int16(p.sprite.FrameWidth/2)),
+		float64(p.Position.Y-int16(p.sprite.FrameHeight/2)),
+	)
 
 	p.updatePlayerFrame(count)
 

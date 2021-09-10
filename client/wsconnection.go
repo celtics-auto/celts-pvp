@@ -8,12 +8,14 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/celtics-auto/ebiten-chat/objects"
+	"github.com/celtics-auto/ebiten-chat/utils"
 	"github.com/gorilla/websocket"
 )
 
 type Connection interface {
-	Write(u *UpdateJson)
-	Read(u *UpdateJson)
+	Write(p *objects.Player)
+	Read(p *objects.Player)
 	Close() error
 }
 
@@ -36,32 +38,31 @@ func NewWsConnection(host, path string) (*WsConnection, error) {
 	}, nil
 }
 
-func (w *WsConnection) Read(u *UpdateJson) {
+func (w *WsConnection) Read(p *objects.Player) {
 	msgType, msg, err := w.Connection.ReadMessage()
 	if err != nil || msgType != websocket.BinaryMessage {
-		log.Println("read:", err)
+		log.Println("failed to read websocket:", err)
 	}
 
-	v := Vector{}
+	v := utils.Vector{}
 	buf := bytes.NewReader(msg)
+	log.Println("read", msg)
 	if err := binary.Read(buf, binary.LittleEndian, &v); err != nil {
-		fmt.Printf("failed to decode byte array: %v", err)
+		fmt.Printf("failed to decode byte array: %s\n", err.Error())
 		return
 	}
 
-	u.Player = &Player{
-		Position: v,
-	}
-	fmt.Printf("x: %d - y: %d", u.Player.Position.X, u.Player.Position.Y)
+	// log.Printf("x: %d - y: %d\n", v.X, v.Y)
+	p.Position = &v
 }
 
-func (w *WsConnection) Write(u *UpdateJson) {
-	posX := u.Player.Position.X
-	posY := u.Player.Position.Y
+func (w *WsConnection) Write(p *objects.Player) {
+	posX := uint16(p.Position.X)
+	posY := uint16(p.Position.Y)
 	buf := make([]byte, 4)
 	binary.LittleEndian.PutUint16(buf[0:], posX)
 	binary.LittleEndian.PutUint16(buf[2:], posY)
-
+	log.Println("write", buf)
 	err := w.Connection.WriteMessage(websocket.BinaryMessage, buf)
 	if err != nil {
 		log.Println("write:", err)

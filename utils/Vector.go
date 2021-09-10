@@ -1,8 +1,8 @@
 package utils
 
 type Vector struct {
-	X int
-	Y int
+	X int16
+	Y int16
 }
 
 type BoundingBox struct {
@@ -10,7 +10,7 @@ type BoundingBox struct {
 	V1 Vector // Bottom-Right vertice
 }
 
-func NewVector(x, y int) *Vector {
+func NewVector(x, y int16) *Vector {
 	return &Vector{
 		X: x,
 		Y: y,

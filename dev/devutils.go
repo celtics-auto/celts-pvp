@@ -27,7 +27,16 @@ func Draw(screen *ebiten.Image, p *objects.Player) {
 	// [test] Random box
 	x := screen.Bounds().Dx() / 2
 	y := screen.Bounds().Dy() / 2
-	bBox := utils.NewBoundigBox(utils.Vector{X: x - 25, Y: y - 25}, utils.Vector{X: x + 25, Y: y + 25})
+	bBox := utils.NewBoundigBox(
+		utils.Vector{
+			X: int16(x - 25),
+			Y: int16(y - 25),
+		},
+		utils.Vector{
+			X: int16(x + 25),
+			Y: int16(y + 25),
+		},
+	)
 
 	if utils.CheckBoxCollision(bBox, p.HitBox) {
 		color.G = 0

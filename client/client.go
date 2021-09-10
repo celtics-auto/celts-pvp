@@ -2,40 +2,23 @@ package client
 
 import (
 	"github.com/celtics-auto/ebiten-chat/config"
+	"github.com/celtics-auto/ebiten-chat/objects"
 )
 
-type Vector struct {
-	X uint16 `json:"x"`
-	Y uint16 `json:"y"`
-}
-
-type Player struct {
-	Position  Vector `json:"position"`
-	Width     int    `json:"width"`
-	Height    int    `json:"height"`
-	Animation int    `json:"animation"`
-	Face      string `json:"face"`
-}
-
 type Message struct {
-	Address string `json:"address"`
-	Text    []byte `json:"text"`
-}
-
-type UpdateJson struct {
-	Message *Message `json:"message"`
-	Player  *Player  `json:"player"`
+	Address string
+	Text    []byte
 }
 
 type Client struct {
 	Conn     Connection
-	Receiver chan *UpdateJson
-	Sender   chan *UpdateJson
+	Receiver chan *objects.Player
+	Sender   chan *objects.Player
 }
 
 func New(cfg *config.Client, env string) *Client {
-	receiver := make(chan *UpdateJson)
-	sender := make(chan *UpdateJson)
+	receiver := make(chan *objects.Player)
+	sender := make(chan *objects.Player)
 
 	c := &Client{
 		Receiver: receiver,
@@ -54,15 +37,15 @@ func New(cfg *config.Client, env string) *Client {
 
 func (c *Client) ReceiveUpdates() {
 	for {
-		u := &UpdateJson{}
-		c.Conn.Read(u)
-		c.Receiver <- u
+		p := &objects.Player{}
+		c.Conn.Read(p)
+		c.Receiver <- p
 	}
 }
 
 func (c *Client) SendUpdates() {
 	for {
-		uJson := <-c.Sender
-		c.Conn.Write(uJson)
+		p := <-c.Sender
+		c.Conn.Write(p)
 	}
 }
